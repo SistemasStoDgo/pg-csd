@@ -5,12 +5,10 @@
 package db
 
 import (
-	"database/sql"
 	"database/sql/driver"
 	"fmt"
-	"time"
 
-	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type AppointmentStatus string
@@ -59,28 +57,28 @@ func (ns NullAppointmentStatus) Value() (driver.Value, error) {
 
 type Appointment struct {
 	ID             int64
-	Uuid           uuid.UUID
+	Uuid           pgtype.UUID
 	AvailabilityID int64
 	PatientID      int64
 	UserID         int64
 	TurnNumber     int32
-	PaymentToken   sql.NullString
+	PaymentToken   pgtype.Text
 	Price          int32
 	Status         AppointmentStatus
-	BookedAt       time.Time
-	CreatedAt      sql.NullTime
-	UpdatedAt      sql.NullTime
+	BookedAt       pgtype.Timestamp
+	CreatedAt      pgtype.Timestamp
+	UpdatedAt      pgtype.Timestamp
 }
 
 type Availability struct {
 	ID          int64
 	DoctorID    int64
-	Date        time.Time
-	StartTime   time.Time
-	EndTime     time.Time
+	Date        pgtype.Date
+	StartTime   pgtype.Time
+	EndTime     pgtype.Time
 	MaxPatients int32
-	CreatedAt   sql.NullTime
-	UpdatedAt   sql.NullTime
+	CreatedAt   pgtype.Timestamp
+	UpdatedAt   pgtype.Timestamp
 }
 
 type Doctor struct {
@@ -89,64 +87,64 @@ type Doctor struct {
 	LastName       string
 	Prefix         string
 	NationalID     string
-	MedicalLicense sql.NullString
-	SpecialtyCode  sql.NullString
-	Description    sql.NullString
+	MedicalLicense pgtype.Text
+	SpecialtyCode  pgtype.Text
+	Description    pgtype.Text
 	Education      string
 	Phone          string
-	Email          sql.NullString
+	Email          pgtype.Text
 	SpecialtyID    int64
-	CreatedAt      sql.NullTime
-	UpdatedAt      sql.NullTime
+	CreatedAt      pgtype.Timestamp
+	UpdatedAt      pgtype.Timestamp
 }
 
 type Patient struct {
 	ID         int64
-	Uuid       uuid.UUID
+	Uuid       pgtype.UUID
 	NationalID string
 	FirstName  string
 	LastName   string
 	Phone      string
-	Email      sql.NullString
-	BirthDate  sql.NullTime
-	CreatedAt  sql.NullTime
-	UpdatedAt  sql.NullTime
+	Email      pgtype.Text
+	BirthDate  pgtype.Date
+	CreatedAt  pgtype.Timestamp
+	UpdatedAt  pgtype.Timestamp
 }
 
 type Pricing struct {
 	DoctorID  int64
 	Amount    int32
-	CreatedAt sql.NullTime
-	UpdatedAt sql.NullTime
+	CreatedAt pgtype.Timestamp
+	UpdatedAt pgtype.Timestamp
 }
 
 type Specialty struct {
 	ID               int64
 	Name             string
-	Description      sql.NullString
-	ShortDescription sql.NullString
-	Type             sql.NullString
-	CreatedAt        sql.NullTime
-	UpdatedAt        sql.NullTime
+	Description      pgtype.Text
+	ShortDescription pgtype.Text
+	Type             pgtype.Text
+	CreatedAt        pgtype.Timestamp
+	UpdatedAt        pgtype.Timestamp
 }
 
 type User struct {
 	ID           int64
-	Uuid         uuid.UUID
+	Uuid         pgtype.UUID
 	Email        string
 	Username     string
 	PasswordHash string
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	CreatedAt    pgtype.Timestamp
+	UpdatedAt    pgtype.Timestamp
 }
 
 type VAppointmentsFull struct {
 	ID               int64
-	Uuid             uuid.UUID
+	Uuid             pgtype.UUID
 	TurnNumber       int32
 	Status           AppointmentStatus
 	Price            int32
-	BookedAt         time.Time
+	BookedAt         pgtype.Timestamp
 	PatientFirstName string
 	PatientLastName  string
 	DoctorID         int64
@@ -154,16 +152,16 @@ type VAppointmentsFull struct {
 	DoctorLastName   string
 	SpecialtyID      int64
 	SpecialtyName    string
-	Date             time.Time
-	StartTime        time.Time
-	EndTime          time.Time
+	Date             pgtype.Date
+	StartTime        pgtype.Time
+	EndTime          pgtype.Time
 }
 
 type VAvailabilityDoctor struct {
 	ID            int64
-	Date          time.Time
-	StartTime     time.Time
-	EndTime       time.Time
+	Date          pgtype.Date
+	StartTime     pgtype.Time
+	EndTime       pgtype.Time
 	MaxPatients   int32
 	DoctorID      int64
 	FirstName     string
@@ -173,8 +171,8 @@ type VAvailabilityDoctor struct {
 
 type VAvailableSlot struct {
 	AvailabilityID int64
-	Date           time.Time
-	StartTime      time.Time
+	Date           pgtype.Date
+	StartTime      pgtype.Time
 	MaxPatients    int32
 	Booked         int64
 	Available      int32
@@ -184,6 +182,6 @@ type VPublicDoctor struct {
 	ID            int64
 	FirstName     string
 	LastName      string
-	Description   sql.NullString
+	Description   pgtype.Text
 	SpecialtyName string
 }

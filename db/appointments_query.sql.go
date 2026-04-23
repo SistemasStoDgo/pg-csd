@@ -7,10 +7,8 @@ package db
 
 import (
 	"context"
-	"database/sql"
-	"time"
 
-	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createAppointment = `-- name: CreateAppointment :one
@@ -35,16 +33,16 @@ type CreateAppointmentParams struct {
 	PatientID      int64
 	UserID         int64
 	TurnNumber     int32
-	PaymentToken   sql.NullString
+	PaymentToken   pgtype.Text
 	Price          int32
-	BookedAt       time.Time
+	BookedAt       pgtype.Timestamp
 }
 
 // ========================
 // Queries for `appointments`
 // ========================
-func (q *Queries) CreateAppointment(ctx context.Context, arg CreateAppointmentParams) (uuid.UUID, error) {
-	row := q.db.QueryRowContext(ctx, createAppointment,
+func (q *Queries) CreateAppointment(ctx context.Context, arg CreateAppointmentParams) (pgtype.UUID, error) {
+	row := q.db.QueryRow(ctx, createAppointment,
 		arg.AvailabilityID,
 		arg.PatientID,
 		arg.UserID,
@@ -53,7 +51,7 @@ func (q *Queries) CreateAppointment(ctx context.Context, arg CreateAppointmentPa
 		arg.Price,
 		arg.BookedAt,
 	)
-	var uuid uuid.UUID
+	var uuid pgtype.UUID
 	err := row.Scan(&uuid)
 	return uuid, err
 }
@@ -64,7 +62,7 @@ WHERE id = $1
 `
 
 func (q *Queries) DeleteAppointment(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, deleteAppointment, id)
+	_, err := q.db.Exec(ctx, deleteAppointment, id)
 	return err
 }
 
@@ -86,8 +84,8 @@ FROM appointments
 WHERE uuid = $1
 `
 
-func (q *Queries) GetAppointmentByUUID(ctx context.Context, argUuid uuid.UUID) (Appointment, error) {
-	row := q.db.QueryRowContext(ctx, getAppointmentByUUID, argUuid)
+func (q *Queries) GetAppointmentByUUID(ctx context.Context, uuid pgtype.UUID) (Appointment, error) {
+	row := q.db.QueryRow(ctx, getAppointmentByUUID, uuid)
 	var i Appointment
 	err := row.Scan(
 		&i.ID,
@@ -126,7 +124,7 @@ ORDER BY turn_number
 `
 
 func (q *Queries) GetAppointmentsByAvailability(ctx context.Context, availabilityID int64) ([]Appointment, error) {
-	rows, err := q.db.QueryContext(ctx, getAppointmentsByAvailability, availabilityID)
+	rows, err := q.db.Query(ctx, getAppointmentsByAvailability, availabilityID)
 	if err != nil {
 		return nil, err
 	}
@@ -151,9 +149,6 @@ func (q *Queries) GetAppointmentsByAvailability(ctx context.Context, availabilit
 			return nil, err
 		}
 		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -181,7 +176,7 @@ ORDER BY booked_at DESC
 `
 
 func (q *Queries) GetAppointmentsByUser(ctx context.Context, userID int64) ([]Appointment, error) {
-	rows, err := q.db.QueryContext(ctx, getAppointmentsByUser, userID)
+	rows, err := q.db.Query(ctx, getAppointmentsByUser, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -206,9 +201,6 @@ func (q *Queries) GetAppointmentsByUser(ctx context.Context, userID int64) ([]Ap
 			return nil, err
 		}
 		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -239,7 +231,7 @@ ORDER BY date, start_time, turn_number
 `
 
 func (q *Queries) ListAppointments(ctx context.Context) ([]VAppointmentsFull, error) {
-	rows, err := q.db.QueryContext(ctx, listAppointments)
+	rows, err := q.db.Query(ctx, listAppointments)
 	if err != nil {
 		return nil, err
 	}
@@ -268,9 +260,6 @@ func (q *Queries) ListAppointments(ctx context.Context) ([]VAppointmentsFull, er
 			return nil, err
 		}
 		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

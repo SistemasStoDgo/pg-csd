@@ -7,7 +7,8 @@ package db
 
 import (
 	"context"
-	"database/sql"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createSpecialty = `-- name: CreateSpecialty :exec
@@ -25,16 +26,16 @@ VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 
 type CreateSpecialtyParams struct {
 	Name             string
-	Description      sql.NullString
-	ShortDescription sql.NullString
-	Type             sql.NullString
+	Description      pgtype.Text
+	ShortDescription pgtype.Text
+	Type             pgtype.Text
 }
 
 // ========================
 // Queries for `specialties`
 // ========================
 func (q *Queries) CreateSpecialty(ctx context.Context, arg CreateSpecialtyParams) error {
-	_, err := q.db.ExecContext(ctx, createSpecialty,
+	_, err := q.db.Exec(ctx, createSpecialty,
 		arg.Name,
 		arg.Description,
 		arg.ShortDescription,
@@ -48,7 +49,7 @@ DELETE FROM specialties WHERE id = $1
 `
 
 func (q *Queries) DeleteSpecialty(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, deleteSpecialty, id)
+	_, err := q.db.Exec(ctx, deleteSpecialty, id)
 	return err
 }
 
@@ -66,13 +67,13 @@ WHERE id = $1
 type GetSpecialtyByIDRow struct {
 	ID               int64
 	Name             string
-	Description      sql.NullString
-	ShortDescription sql.NullString
-	Type             sql.NullString
+	Description      pgtype.Text
+	ShortDescription pgtype.Text
+	Type             pgtype.Text
 }
 
 func (q *Queries) GetSpecialtyByID(ctx context.Context, id int64) (GetSpecialtyByIDRow, error) {
-	row := q.db.QueryRowContext(ctx, getSpecialtyByID, id)
+	row := q.db.QueryRow(ctx, getSpecialtyByID, id)
 	var i GetSpecialtyByIDRow
 	err := row.Scan(
 		&i.ID,
@@ -91,7 +92,7 @@ WHERE name ILIKE $1
 `
 
 func (q *Queries) GetSpecialtyByName(ctx context.Context, name string) (int64, error) {
-	row := q.db.QueryRowContext(ctx, getSpecialtyByName, name)
+	row := q.db.QueryRow(ctx, getSpecialtyByName, name)
 	var id int64
 	err := row.Scan(&id)
 	return id, err
@@ -111,13 +112,13 @@ ORDER BY name ASC
 type ListSpecialtiesRow struct {
 	ID               int64
 	Name             string
-	Description      sql.NullString
-	ShortDescription sql.NullString
-	Type             sql.NullString
+	Description      pgtype.Text
+	ShortDescription pgtype.Text
+	Type             pgtype.Text
 }
 
 func (q *Queries) ListSpecialties(ctx context.Context) ([]ListSpecialtiesRow, error) {
-	rows, err := q.db.QueryContext(ctx, listSpecialties)
+	rows, err := q.db.Query(ctx, listSpecialties)
 	if err != nil {
 		return nil, err
 	}
@@ -135,9 +136,6 @@ func (q *Queries) ListSpecialties(ctx context.Context) ([]ListSpecialtiesRow, er
 			return nil, err
 		}
 		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -160,13 +158,13 @@ RETURNING id, name, description, short_description, type, created_at, updated_at
 type UpdateSpecialtyParams struct {
 	ID               int64
 	Name             string
-	Description      sql.NullString
-	ShortDescription sql.NullString
-	Type             sql.NullString
+	Description      pgtype.Text
+	ShortDescription pgtype.Text
+	Type             pgtype.Text
 }
 
 func (q *Queries) UpdateSpecialty(ctx context.Context, arg UpdateSpecialtyParams) error {
-	_, err := q.db.ExecContext(ctx, updateSpecialty,
+	_, err := q.db.Exec(ctx, updateSpecialty,
 		arg.ID,
 		arg.Name,
 		arg.Description,

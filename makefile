@@ -4,7 +4,7 @@
 
 .PHONY: all 
 gensqlc: 
-	cd backend/internal/database/db/sqlc && sqlc generate
+	cd sqlc && sqlc generate
 
 build: 
 	go build

@@ -7,7 +7,8 @@ package db
 
 import (
 	"context"
-	"database/sql"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createDoctor = `-- name: CreateDoctor :one
@@ -36,12 +37,12 @@ type CreateDoctorParams struct {
 	LastName       string
 	Prefix         string
 	NationalID     string
-	MedicalLicense sql.NullString
-	SpecialtyCode  sql.NullString
-	Description    sql.NullString
+	MedicalLicense pgtype.Text
+	SpecialtyCode  pgtype.Text
+	Description    pgtype.Text
 	Education      string
 	Phone          string
-	Email          sql.NullString
+	Email          pgtype.Text
 	SpecialtyID    int64
 }
 
@@ -49,7 +50,7 @@ type CreateDoctorParams struct {
 // Queries for `doctors`
 // ========================
 func (q *Queries) CreateDoctor(ctx context.Context, arg CreateDoctorParams) (int64, error) {
-	row := q.db.QueryRowContext(ctx, createDoctor,
+	row := q.db.QueryRow(ctx, createDoctor,
 		arg.FirstName,
 		arg.LastName,
 		arg.Prefix,
@@ -72,7 +73,7 @@ DELETE FROM doctors WHERE id = $1
 `
 
 func (q *Queries) DeleteDoctor(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, deleteDoctor, id)
+	_, err := q.db.Exec(ctx, deleteDoctor, id)
 	return err
 }
 
@@ -99,17 +100,17 @@ type GetDoctorByIDRow struct {
 	FirstName      string
 	LastName       string
 	Prefix         string
-	MedicalLicense sql.NullString
-	SpecialtyCode  sql.NullString
-	Description    sql.NullString
+	MedicalLicense pgtype.Text
+	SpecialtyCode  pgtype.Text
+	Description    pgtype.Text
 	Education      string
 	Phone          string
-	Email          sql.NullString
+	Email          pgtype.Text
 	SpecialtyName  string
 }
 
 func (q *Queries) GetDoctorByID(ctx context.Context, id int64) (GetDoctorByIDRow, error) {
-	row := q.db.QueryRowContext(ctx, getDoctorByID, id)
+	row := q.db.QueryRow(ctx, getDoctorByID, id)
 	var i GetDoctorByIDRow
 	err := row.Scan(
 		&i.ID,
@@ -134,7 +135,7 @@ WHERE national_id = $1
 `
 
 func (q *Queries) GetDoctorIDByNationalID(ctx context.Context, nationalID string) (int64, error) {
-	row := q.db.QueryRowContext(ctx, getDoctorIDByNationalID, nationalID)
+	row := q.db.QueryRow(ctx, getDoctorIDByNationalID, nationalID)
 	var id int64
 	err := row.Scan(&id)
 	return id, err
@@ -162,17 +163,17 @@ type GetDoctorsRow struct {
 	FirstName      string
 	LastName       string
 	Prefix         string
-	MedicalLicense sql.NullString
-	SpecialtyCode  sql.NullString
-	Description    sql.NullString
+	MedicalLicense pgtype.Text
+	SpecialtyCode  pgtype.Text
+	Description    pgtype.Text
 	Education      string
 	Phone          string
-	Email          sql.NullString
+	Email          pgtype.Text
 	SpecialtyName  string
 }
 
 func (q *Queries) GetDoctors(ctx context.Context) ([]GetDoctorsRow, error) {
-	rows, err := q.db.QueryContext(ctx, getDoctors)
+	rows, err := q.db.Query(ctx, getDoctors)
 	if err != nil {
 		return nil, err
 	}
@@ -196,9 +197,6 @@ func (q *Queries) GetDoctors(ctx context.Context) ([]GetDoctorsRow, error) {
 			return nil, err
 		}
 		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -229,17 +227,17 @@ type GetDoctorsBySpecialtyIDRow struct {
 	FirstName      string
 	LastName       string
 	Prefix         string
-	Description    sql.NullString
+	Description    pgtype.Text
 	Education      string
-	MedicalLicense sql.NullString
-	SpecialtyCode  sql.NullString
+	MedicalLicense pgtype.Text
+	SpecialtyCode  pgtype.Text
 	Phone          string
-	Email          sql.NullString
+	Email          pgtype.Text
 	SpecialtyName  string
 }
 
 func (q *Queries) GetDoctorsBySpecialtyID(ctx context.Context, id int64) ([]GetDoctorsBySpecialtyIDRow, error) {
-	rows, err := q.db.QueryContext(ctx, getDoctorsBySpecialtyID, id)
+	rows, err := q.db.Query(ctx, getDoctorsBySpecialtyID, id)
 	if err != nil {
 		return nil, err
 	}
@@ -263,9 +261,6 @@ func (q *Queries) GetDoctorsBySpecialtyID(ctx context.Context, id int64) ([]GetD
 			return nil, err
 		}
 		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -294,16 +289,16 @@ type UpdateDoctorParams struct {
 	FirstName      string
 	LastName       string
 	Prefix         string
-	MedicalLicense sql.NullString
-	SpecialtyCode  sql.NullString
-	Description    sql.NullString
+	MedicalLicense pgtype.Text
+	SpecialtyCode  pgtype.Text
+	Description    pgtype.Text
 	Phone          string
-	Email          sql.NullString
+	Email          pgtype.Text
 	SpecialtyID    int64
 }
 
 func (q *Queries) UpdateDoctor(ctx context.Context, arg UpdateDoctorParams) error {
-	_, err := q.db.ExecContext(ctx, updateDoctor,
+	_, err := q.db.Exec(ctx, updateDoctor,
 		arg.ID,
 		arg.FirstName,
 		arg.LastName,

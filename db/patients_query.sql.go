@@ -7,9 +7,8 @@ package db
 
 import (
 	"context"
-	"database/sql"
 
-	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createPatient = `-- name: CreatePatient :one
@@ -30,20 +29,20 @@ RETURNING id
 `
 
 type CreatePatientParams struct {
-	Uuid       uuid.UUID
+	Uuid       pgtype.UUID
 	NationalID string
 	FirstName  string
 	LastName   string
 	Phone      string
-	Email      sql.NullString
-	BirthDate  sql.NullTime
+	Email      pgtype.Text
+	BirthDate  pgtype.Date
 }
 
 // ========================
 // Queries for `patients`
 // ========================
 func (q *Queries) CreatePatient(ctx context.Context, arg CreatePatientParams) (int64, error) {
-	row := q.db.QueryRowContext(ctx, createPatient,
+	row := q.db.QueryRow(ctx, createPatient,
 		arg.Uuid,
 		arg.NationalID,
 		arg.FirstName,
@@ -74,7 +73,7 @@ WHERE id = $1
 `
 
 func (q *Queries) GetPatientByID(ctx context.Context, id int64) (Patient, error) {
-	row := q.db.QueryRowContext(ctx, getPatientByID, id)
+	row := q.db.QueryRow(ctx, getPatientByID, id)
 	var i Patient
 	err := row.Scan(
 		&i.ID,
@@ -108,7 +107,7 @@ WHERE national_id = $1
 `
 
 func (q *Queries) GetPatientByNationalID(ctx context.Context, nationalID string) (Patient, error) {
-	row := q.db.QueryRowContext(ctx, getPatientByNationalID, nationalID)
+	row := q.db.QueryRow(ctx, getPatientByNationalID, nationalID)
 	var i Patient
 	err := row.Scan(
 		&i.ID,
@@ -143,12 +142,12 @@ type UpdatePatientParams struct {
 	FirstName string
 	LastName  string
 	Phone     string
-	Email     sql.NullString
-	BirthDate sql.NullTime
+	Email     pgtype.Text
+	BirthDate pgtype.Date
 }
 
 func (q *Queries) UpdatePatient(ctx context.Context, arg UpdatePatientParams) (Patient, error) {
-	row := q.db.QueryRowContext(ctx, updatePatient,
+	row := q.db.QueryRow(ctx, updatePatient,
 		arg.ID,
 		arg.FirstName,
 		arg.LastName,

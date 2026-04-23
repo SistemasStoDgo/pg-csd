@@ -7,9 +7,8 @@ package db
 
 import (
 	"context"
-	"time"
 
-	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createUser = `-- name: CreateUser :one
@@ -26,7 +25,7 @@ RETURNING id, uuid, email, username, password_hash, created_at, updated_at
 `
 
 type CreateUserParams struct {
-	Uuid         uuid.UUID
+	Uuid         pgtype.UUID
 	Email        string
 	Username     string
 	PasswordHash string
@@ -36,7 +35,7 @@ type CreateUserParams struct {
 // Consultas para la tabla `users`
 // ========================
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, createUser,
+	row := q.db.QueryRow(ctx, createUser,
 		arg.Uuid,
 		arg.Email,
 		arg.Username,
@@ -67,7 +66,7 @@ type ExistsUserByEmailParams struct {
 }
 
 func (q *Queries) ExistsUserByEmail(ctx context.Context, arg ExistsUserByEmailParams) (bool, error) {
-	row := q.db.QueryRowContext(ctx, existsUserByEmail, arg.Email, arg.ID)
+	row := q.db.QueryRow(ctx, existsUserByEmail, arg.Email, arg.ID)
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err
@@ -81,14 +80,14 @@ WHERE email = $1
 
 type GetUserByEmailRow struct {
 	ID           int64
-	Uuid         uuid.UUID
+	Uuid         pgtype.UUID
 	Email        string
 	Username     string
 	PasswordHash string
 }
 
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error) {
-	row := q.db.QueryRowContext(ctx, getUserByEmail, email)
+	row := q.db.QueryRow(ctx, getUserByEmail, email)
 	var i GetUserByEmailRow
 	err := row.Scan(
 		&i.ID,
@@ -108,13 +107,13 @@ WHERE id = $1
 
 type GetUserByIDRow struct {
 	ID       int64
-	Uuid     uuid.UUID
+	Uuid     pgtype.UUID
 	Email    string
 	Username string
 }
 
 func (q *Queries) GetUserByID(ctx context.Context, id int64) (GetUserByIDRow, error) {
-	row := q.db.QueryRowContext(ctx, getUserByID, id)
+	row := q.db.QueryRow(ctx, getUserByID, id)
 	var i GetUserByIDRow
 	err := row.Scan(
 		&i.ID,
@@ -132,7 +131,7 @@ WHERE email = $1
 `
 
 func (q *Queries) GetUserPasswordHashByEmail(ctx context.Context, email string) (string, error) {
-	row := q.db.QueryRowContext(ctx, getUserPasswordHashByEmail, email)
+	row := q.db.QueryRow(ctx, getUserPasswordHashByEmail, email)
 	var password_hash string
 	err := row.Scan(&password_hash)
 	return password_hash, err
@@ -152,7 +151,7 @@ type UpdateUserPasswordParams struct {
 }
 
 func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) (int64, error) {
-	row := q.db.QueryRowContext(ctx, updateUserPassword, arg.ID, arg.PasswordHash)
+	row := q.db.QueryRow(ctx, updateUserPassword, arg.ID, arg.PasswordHash)
 	var id int64
 	err := row.Scan(&id)
 	return id, err
@@ -175,15 +174,15 @@ type UpdateUserProfileParams struct {
 
 type UpdateUserProfileRow struct {
 	ID        int64
-	Uuid      uuid.UUID
+	Uuid      pgtype.UUID
 	Email     string
 	Username  string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	CreatedAt pgtype.Timestamp
+	UpdatedAt pgtype.Timestamp
 }
 
 func (q *Queries) UpdateUserProfile(ctx context.Context, arg UpdateUserProfileParams) (UpdateUserProfileRow, error) {
-	row := q.db.QueryRowContext(ctx, updateUserProfile, arg.ID, arg.Email, arg.Username)
+	row := q.db.QueryRow(ctx, updateUserProfile, arg.ID, arg.Email, arg.Username)
 	var i UpdateUserProfileRow
 	err := row.Scan(
 		&i.ID,

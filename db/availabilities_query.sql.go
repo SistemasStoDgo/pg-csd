@@ -7,8 +7,8 @@ package db
 
 import (
 	"context"
-	"database/sql"
-	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createAvailability = `-- name: CreateAvailability :one
@@ -28,9 +28,9 @@ RETURNING id, doctor_id, date, start_time, end_time, max_patients, created_at, u
 
 type CreateAvailabilityParams struct {
 	DoctorID    int64
-	Date        time.Time
-	StartTime   time.Time
-	EndTime     time.Time
+	Date        pgtype.Date
+	StartTime   pgtype.Time
+	EndTime     pgtype.Time
 	MaxPatients int32
 }
 
@@ -38,7 +38,7 @@ type CreateAvailabilityParams struct {
 // Queries for `availabilities`
 // ========================
 func (q *Queries) CreateAvailability(ctx context.Context, arg CreateAvailabilityParams) (Availability, error) {
-	row := q.db.QueryRowContext(ctx, createAvailability,
+	row := q.db.QueryRow(ctx, createAvailability,
 		arg.DoctorID,
 		arg.Date,
 		arg.StartTime,
@@ -65,7 +65,7 @@ WHERE id = $1
 `
 
 func (q *Queries) DeleteAvailability(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, deleteAvailability, id)
+	_, err := q.db.Exec(ctx, deleteAvailability, id)
 	return err
 }
 
@@ -78,11 +78,11 @@ WHERE doctor_id = $1
 
 type GetAvailabilitiesByDoctorAndDateParams struct {
 	DoctorID int64
-	Date     time.Time
+	Date     pgtype.Date
 }
 
 func (q *Queries) GetAvailabilitiesByDoctorAndDate(ctx context.Context, arg GetAvailabilitiesByDoctorAndDateParams) ([]Availability, error) {
-	rows, err := q.db.QueryContext(ctx, getAvailabilitiesByDoctorAndDate, arg.DoctorID, arg.Date)
+	rows, err := q.db.Query(ctx, getAvailabilitiesByDoctorAndDate, arg.DoctorID, arg.Date)
 	if err != nil {
 		return nil, err
 	}
@@ -104,9 +104,6 @@ func (q *Queries) GetAvailabilitiesByDoctorAndDate(ctx context.Context, arg GetA
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -127,17 +124,17 @@ GROUP BY av.id
 type GetAvailabilityWithAppointmentsCountRow struct {
 	ID                  int64
 	DoctorID            int64
-	Date                time.Time
-	StartTime           time.Time
-	EndTime             time.Time
+	Date                pgtype.Date
+	StartTime           pgtype.Time
+	EndTime             pgtype.Time
 	MaxPatients         int32
-	CreatedAt           sql.NullTime
-	UpdatedAt           sql.NullTime
+	CreatedAt           pgtype.Timestamp
+	UpdatedAt           pgtype.Timestamp
 	CurrentAppointments int64
 }
 
 func (q *Queries) GetAvailabilityWithAppointmentsCount(ctx context.Context, id int64) (GetAvailabilityWithAppointmentsCountRow, error) {
-	row := q.db.QueryRowContext(ctx, getAvailabilityWithAppointmentsCount, id)
+	row := q.db.QueryRow(ctx, getAvailabilityWithAppointmentsCount, id)
 	var i GetAvailabilityWithAppointmentsCountRow
 	err := row.Scan(
 		&i.ID,
@@ -170,20 +167,20 @@ ORDER BY av.date, av.start_time
 type ListAvailabilitiesRow struct {
 	ID              int64
 	DoctorID        int64
-	Date            time.Time
-	StartTime       time.Time
-	EndTime         time.Time
+	Date            pgtype.Date
+	StartTime       pgtype.Time
+	EndTime         pgtype.Time
 	MaxPatients     int32
-	CreatedAt       sql.NullTime
-	UpdatedAt       sql.NullTime
+	CreatedAt       pgtype.Timestamp
+	UpdatedAt       pgtype.Timestamp
 	SpecialtyName   string
 	DoctorFirstName string
 	DoctorLastName  string
 	Prefix          string
 }
 
-func (q *Queries) ListAvailabilities(ctx context.Context, date time.Time) ([]ListAvailabilitiesRow, error) {
-	rows, err := q.db.QueryContext(ctx, listAvailabilities, date)
+func (q *Queries) ListAvailabilities(ctx context.Context, date pgtype.Date) ([]ListAvailabilitiesRow, error) {
+	rows, err := q.db.Query(ctx, listAvailabilities, date)
 	if err != nil {
 		return nil, err
 	}
@@ -209,9 +206,6 @@ func (q *Queries) ListAvailabilities(ctx context.Context, date time.Time) ([]Lis
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -236,18 +230,18 @@ ORDER BY av.start_time
 
 type ListAvailabilitiesByDoctorIDParams struct {
 	ID   int64
-	Date time.Time
+	Date pgtype.Date
 }
 
 type ListAvailabilitiesByDoctorIDRow struct {
 	ID              int64
 	DoctorID        int64
-	Date            time.Time
-	StartTime       time.Time
-	EndTime         time.Time
+	Date            pgtype.Date
+	StartTime       pgtype.Time
+	EndTime         pgtype.Time
 	MaxPatients     int32
-	CreatedAt       sql.NullTime
-	UpdatedAt       sql.NullTime
+	CreatedAt       pgtype.Timestamp
+	UpdatedAt       pgtype.Timestamp
 	SpecialtyName   string
 	DoctorFirstName string
 	DoctorLastName  string
@@ -256,7 +250,7 @@ type ListAvailabilitiesByDoctorIDRow struct {
 }
 
 func (q *Queries) ListAvailabilitiesByDoctorID(ctx context.Context, arg ListAvailabilitiesByDoctorIDParams) ([]ListAvailabilitiesByDoctorIDRow, error) {
-	rows, err := q.db.QueryContext(ctx, listAvailabilitiesByDoctorID, arg.ID, arg.Date)
+	rows, err := q.db.Query(ctx, listAvailabilitiesByDoctorID, arg.ID, arg.Date)
 	if err != nil {
 		return nil, err
 	}
@@ -283,9 +277,6 @@ func (q *Queries) ListAvailabilitiesByDoctorID(ctx context.Context, arg ListAvai
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -310,18 +301,18 @@ ORDER BY av.date, av.start_time
 
 type ListAvailabilitiesBySpecialtyIDParams struct {
 	ID   int64
-	Date time.Time
+	Date pgtype.Date
 }
 
 type ListAvailabilitiesBySpecialtyIDRow struct {
 	ID              int64
 	DoctorID        int64
-	Date            time.Time
-	StartTime       time.Time
-	EndTime         time.Time
+	Date            pgtype.Date
+	StartTime       pgtype.Time
+	EndTime         pgtype.Time
 	MaxPatients     int32
-	CreatedAt       sql.NullTime
-	UpdatedAt       sql.NullTime
+	CreatedAt       pgtype.Timestamp
+	UpdatedAt       pgtype.Timestamp
 	SpecialtyName   string
 	DoctorFirstName string
 	DoctorLastName  string
@@ -330,7 +321,7 @@ type ListAvailabilitiesBySpecialtyIDRow struct {
 }
 
 func (q *Queries) ListAvailabilitiesBySpecialtyID(ctx context.Context, arg ListAvailabilitiesBySpecialtyIDParams) ([]ListAvailabilitiesBySpecialtyIDRow, error) {
-	rows, err := q.db.QueryContext(ctx, listAvailabilitiesBySpecialtyID, arg.ID, arg.Date)
+	rows, err := q.db.Query(ctx, listAvailabilitiesBySpecialtyID, arg.ID, arg.Date)
 	if err != nil {
 		return nil, err
 	}
@@ -357,9 +348,6 @@ func (q *Queries) ListAvailabilitiesBySpecialtyID(ctx context.Context, arg ListA
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -382,14 +370,14 @@ RETURNING id, doctor_id, date, start_time, end_time, max_patients, created_at, u
 type UpdateAvailabilityParams struct {
 	ID          int64
 	DoctorID    int64
-	Date        time.Time
-	StartTime   time.Time
-	EndTime     time.Time
+	Date        pgtype.Date
+	StartTime   pgtype.Time
+	EndTime     pgtype.Time
 	MaxPatients int32
 }
 
 func (q *Queries) UpdateAvailability(ctx context.Context, arg UpdateAvailabilityParams) (Availability, error) {
-	row := q.db.QueryRowContext(ctx, updateAvailability,
+	row := q.db.QueryRow(ctx, updateAvailability,
 		arg.ID,
 		arg.DoctorID,
 		arg.Date,
