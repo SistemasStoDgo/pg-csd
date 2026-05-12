@@ -1,4 +1,12 @@
 services:
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    networks:
+      - infra-net
+
   postgres:
     image: postgres:18-alpine
     restart: unless-stopped
@@ -7,13 +15,15 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql
       - ./sqlc/schema:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - infra-net
 
 
   rabbitmq:
@@ -31,8 +41,26 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - infra-net
 
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: vaultwarden
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    environment:
+      DOMAIN: "https://vwcsd.clinicasantodomingo.pe"
+    volumes:
+      - /home/usr/vw-data/:/data/
+    networks:
+      - infra-net
 
 volumes:
-  postgres_data:
+  pgdata:
   rabbitmq_data:
+
+networks:
+  infra-net:
+    external: true
